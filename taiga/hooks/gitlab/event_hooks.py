@@ -40,9 +40,9 @@ class PushEventHook(BaseEventHook):
         commits = self.payload.get("commits", [])
         for commit in commits:
             message = commit.get("message", None)
-            self._process_message(message, None)
+            self._process_message(message, None, commit)
 
-    def _process_message(self, message, gitlab_user):
+    def _process_message(self, message, gitlab_user, commit):
         """
           The message we will be looking for seems like
             TG-XX #yyyyyy
@@ -57,9 +57,9 @@ class PushEventHook(BaseEventHook):
         for m in p.finditer(message.lower()):
             ref = m.group(1)
             status_slug = m.group(2)
-            self._change_status(ref, status_slug, gitlab_user)
+            self._change_status(ref, status_slug, gitlab_user, commit)
 
-    def _change_status(self, ref, status_slug, gitlab_user):
+    def _change_status(self, ref, status_slug, gitlab_user, commit):
         if Issue.objects.filter(project=self.project, ref=ref).exists():
             modelClass = Issue
             statusClass = IssueStatus
@@ -82,8 +82,10 @@ class PushEventHook(BaseEventHook):
         element.status = status
         element.save()
 
+        url = commit.get("url", None)
+        author = commit.get("author", None)
         snapshot = take_snapshot(element,
-                                 comment=_("Status changed from GitLab commit"),
+                                 comment=_("Status changed from GitLab [commit]("+url+") by "+author["name"]),
                                  user=get_gitlab_user(gitlab_user))
         send_notifications(element, history=snapshot)
 

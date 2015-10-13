@@ -237,6 +237,11 @@ TEMPLATES = [
             "match_extension": ".jinja",
         }
     },
+    {
+        "BACKEND":'django.template.backends.django.DjangoTemplates',
+        "APP_DIRS": True,
+    },
+    
 ]
 
 
